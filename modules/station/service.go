@@ -10,8 +10,10 @@ import (
 )
 
 type Service interface {
-	GetAllStation() (response []StationResponse, err error)           //returnnya list dan error
-	CheckSchedule(id string) (response []ScheduleResponse, err error) //returnnya list dan error
+	GetAllStation() (response []StationResponse, err error)               //returnnya list dan error
+	CheckSchedule(id string) (response []ScheduleResponse, err error)     //returnnya list dan error
+	CheckRetail(id string) (response StationRetailsResponse, err error) //returnnya list dan error
+	CheckFacility(id string) (response StationFacilitiesResponse, err error) //returnnya list dan error
 }
 
 type service struct {
@@ -91,6 +93,82 @@ func (s *service) CheckSchedule(id string) (response []ScheduleResponse, err err
 	return
 }
 
+func (s *service) CheckRetail(id string) (response StationRetailsResponse, err error) {
+	//layer service
+	url := "https://www.jakartamrt.co.id/id/val/stasiuns"
+
+	//hit url
+	byteResponse, err := client.DoRequest(s.client, url)
+
+	if err != nil {
+		return response, err
+	}
+	
+	var station []Station
+
+	err = json.Unmarshal(byteResponse, &station)
+
+	if err != nil {
+		return response, err
+	}
+
+	// station selected by id
+	var stationSelected Station 
+
+	for _, item := range station {
+		if item.Id == id {
+			stationSelected = item
+			break
+		}
+	}
+
+	response = StationRetailsResponse{
+		Id:             stationSelected.Id,
+		StationName:    stationSelected.Name,
+		StationRetails: stationSelected.Retail,
+	}
+
+	return response, nil
+}
+
+func (s *service) CheckFacility(id string) (response StationFacilitiesResponse, err error) {
+	//layer service
+	url := "https://www.jakartamrt.co.id/id/val/stasiuns"
+
+	//hit url
+	byteResponse, err := client.DoRequest(s.client, url)
+
+	if err != nil {
+		return response, err
+	}
+	
+	var station []Station
+
+	err = json.Unmarshal(byteResponse, &station)
+
+	if err != nil {
+		return response, err
+	}
+	
+	// station selected by id
+	var stationSelected Station 
+
+	for _, item := range station {
+		if item.Id == id {
+			stationSelected = item
+			break
+		}
+	}
+
+	response = StationFacilitiesResponse{
+		Id:             stationSelected.Id,
+		StationName:    stationSelected.Name,
+		StationFacility: stationSelected.Facility,
+	}
+
+	return response, nil
+}
+
 func ConvertDataToResponse(schedule Schedule) (response []ScheduleResponse, err error) {
 	var (
 		LebakBulusTripName = "Stasiun Lebak Bulus Grab"
@@ -113,7 +191,6 @@ func ConvertDataToResponse(schedule Schedule) (response []ScheduleResponse, err 
 
 	// convert to response
 	response, err = convertResponse(currentStation, scheduleLebakBulusParsed, LebakBulusTripName, response)
-	
 	if err != nil {
 		return nil, err
 	}
